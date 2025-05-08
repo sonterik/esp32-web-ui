@@ -1,41 +1,45 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>ESP32 Контроль</title>
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-  <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
-    h2 { margin: 20px 0; }
-    button { font-size: 20px; margin: 10px; padding: 10px 20px; }
-  </style>
+    <meta charset="UTF-8">
+    <title>ESP32 Monitor</title>
 </head>
 <body>
-  <h1>ESP32 Мониторинг</h1>
-  <h2>Температура: <span id="temp">--</span> °C</h2>
-  <h2>Влажность: <span id="hum">--</span> %</h2>
-  <button onclick="toggleLED('ON')">Включить светодиод</button>
-  <button onclick="toggleLED('OFF')">Выключить светодиод</button>
+<h2>Температура: <span id="temp">--</span> °C</h2>
+<h2>Влажность: <span id="hum">--</span> %</h2>
+<button onclick="ledControl('ON')">LED ON</button>
+<button onclick="ledControl('OFF')">LED OFF</button>
 
-  <script>
-    const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script>
+    const options = {
+        hostname: "YOUR_INSTANCE.hivemq.cloud",
+        port: 8884,
+        protocol: "wss",
+        username: "ВАШ_USERNAME",
+        password: "ВАШ_PASSWORD",
+    };
+
+    const client = mqtt.connect(`wss://${options.hostname}:${options.port}/mqtt`, {
+        username: options.username,
+        password: options.password
+    });
 
     client.on('connect', () => {
-      console.log("Connected to HiveMQ");
-      client.subscribe('esp32/dht22');
+        client.subscribe("device/status/data");
     });
 
     client.on('message', (topic, message) => {
-      if (topic === 'esp32/dht22') {
-        const data = JSON.parse(message.toString());
-        document.getElementById('temp').innerText = data.temperature.toFixed(1);
-        document.getElementById('hum').innerText = data.humidity.toFixed(1);
-      }
+        if (topic === "device/status/data") {
+            const data = JSON.parse(message.toString());
+            document.getElementById("temp").innerText = data.temp;
+            document.getElementById("hum").innerText = data.hum;
+        }
     });
 
-    function toggleLED(state) {
-      client.publish('esp32/led', state);
+    function ledControl(state) {
+        client.publish("device/control/led", state);
     }
-  </script>
+</script>
 </body>
 </html>
